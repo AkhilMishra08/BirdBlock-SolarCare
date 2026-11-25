@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solar Panel Automatic Cleaner Robot — 3D CAD Model &amp; Simulator</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #0b1120;
+      color: #e2e8f0;
+    }
+    #viewport {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+      touch-action: none;
+    }
+    #viewport:active {
+      cursor: grabbing;
+    }
+    .panel-glass {
+      background: rgba(15, 23, 42, 0.86);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+    }
+    input[type="range"] {
+      accent-color: #38bdf8;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="relative select-none">
+
+  <!-- 3D Canvas -->
+  <canvas id="viewport"></canvas>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="panel-glass rounded-xl px-4 py-2.5 shadow-xl pointer-events-auto flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 font-bold text-sm">
+        3D
+      </div>
+      <div>
+        <h1 class="text-sm sm:text-base font-semibold text-white leading-tight">
+          SolarClean-X1 Automatic Cleaner Robot
+        </h1>
+        <p class="text-[11px] text-slate-400">
+          Anti-Slip Tracked &bull; Fixed Frame Clamps &bull; Scratch-Free Circular Mops
+        </p>
+      </div>
+    </div>
+
+    <!-- Camera & Export Actions -->
+    <div class="panel-glass rounded-xl px-2.5 py-2 shadow-xl pointer-events-auto flex flex-wrap items-center gap-1.5">
+      <button type="button" data-cam="iso" class="cam-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-sky-500/20 text-sky-300 border border-sky-400/40 hover:bg-sky-500/30 transition">
+        Isometric
+      </button>
+      <button type="button" data-cam="clamp" class="cam-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 text-slate-300 border border-slate-700 hover:bg-slate-700 transition">
+        Fixed Clamps
+      </button>
+      <button type="button" data-cam="scrub" class="cam-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 text-slate-300 border border-slate-700 hover:bg-slate-700 transition">
+        Soft Scrub
+      </button>
+      <button type="button" data-cam="track" class="cam-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 text-slate-300 border border-slate-700 hover:bg-slate-700 transition">
+        Anti-Slip Track
+      </button>
+      <button type="button" data-cam="top" class="cam-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 text-slate-300 border border-slate-700 hover:bg-slate-700 transition">
+        Top
+      </button>
+      <div class="h-4 w-px bg-slate-700 mx-0.5 hidden sm:block"></div>
+      <button type="button" id="btn-export-stl" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 hover:bg-emerald-500/30 transition">
+        Export .STL
+      </button>
+      <button type="button" id="btn-export-obj" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-400/40 hover:bg-indigo-500/30 transition">
+        Export .OBJ
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer Toggle -->
+  <button type="button" id="btn-toggle-sidebar" class="fixed bottom-4 right-4 z-30 md:hidden panel-glass px-3.5 py-2 rounded-full text-xs font-semibold text-sky-300 shadow-lg border border-sky-400/40">
+    Controls &amp; Parts
+  </button>
+
+  <!-- Left Control & Inspector Sidebar -->
+  <aside id="sidebar" class="fixed left-3 top-20 bottom-3 w-72 sm:w-80 z-20 panel-glass rounded-xl p-3.5 shadow-2xl flex flex-col gap-3 overflow-y-auto custom-scroll transition-transform duration-200 -translate-x-[110%] md:translate-x-0">
+
+    <!-- One-by-One Cleaning Simulation -->
+    <section class="bg-slate-900/70 rounded-lg p-3 border border-slate-800">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-sky-400">
+          One-by-One Cleaning Cycle
+        </h2>
+        <span id="sim-status-badge" class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          Ready
+        </span>
+      </div>
+
+      <div class="flex gap-2 mb-2.5">
+        <button type="button" id="btn-play-pause" class="flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition">
+          Start Auto Clean
+        </button>
+        <button type="button" id="btn-reset-dust" class="py-1.5 px-2.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+          Reset Dust
+        </button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-1.5 mb-2.5">
+        <button type="button" data-panel="0" class="panel-target-btn py-1.5 rounded-md text-[11px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+          Panel 1
+        </button>
+        <button type="button" data-panel="1" class="panel-target-btn py-1.5 rounded-md text-[11px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+          Panel 2
+        </button>
+        <button type="button" data-panel="2" class="panel-target-btn py-1.5 rounded-md text-[11px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+          Panel 3
+        </button>
+      </div>
+
+      <!-- Panel Cleanliness Bars -->
+      <div class="space-y-1.5 text-[11px]">
+        <div>
+          <div class="flex justify-between text-slate-300 mb-0.5">
+            <span>Panel 1</span><span id="clean-pct-0">0%</span>
+          </div>
+          <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div id="clean-bar-0" class="h-full bg-emerald-400 transition-all duration-150" style="width: 0%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-slate-300 mb-0.5">
+            <span>Panel 2</span><span id="clean-pct-1">0%</span>
+          </div>
+          <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div id="clean-bar-1" class="h-full bg-emerald-400 transition-all duration-150" style="width: 0%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-slate-300 mb-0.5">
+            <span>Panel 3</span><span id="clean-pct-2">0%</span>
+          </div>
+          <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div id="clean-bar-2" class="h-full bg-emerald-400 transition-all duration-150" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CAD Inspection Controls -->
+    <section class="bg-slate-900/70 rounded-lg p-3 border border-slate-800 space-y-2.5">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-sky-400">
+        CAD Inspection
+      </h2>
+
+      <div>
+        <div class="flex justify-between text-xs text-slate-300 mb-1">
+          <span>Exploded View</span>
+          <span id="explode-val" class="text-sky-300 font-medium">0%</span>
+        </div>
+        <input id="slider-explode" type="range" min="0" max="100" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer" />
+      </div>
+
+      <div>
+        <div class="flex justify-between text-xs text-slate-300 mb-1">
+          <span>Panel Tilt Angle</span>
+          <span id="tilt-val" class="text-sky-300 font-medium">22&deg;</span>
+        </div>
+        <input id="slider-tilt" type="range" min="5" max="40" value="22" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer" />
+      </div>
+
+      <div class="flex items-center justify-between pt-1">
+        <span class="text-xs text-slate-300">Show Array Frame</span>
+        <button type="button" id="btn-toggle-panels" class="px-2.5 py-1 rounded-md text-[11px] font-medium bg-sky-500/20 text-sky-300 border border-sky-400/40">
+          Visible
+        </button>
+      </div>
+    </section>
+
+    <!-- Subsystem Callouts -->
+    <section class="bg-slate-900/70 rounded-lg p-3 border border-slate-800 flex-1 flex flex-col">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-sky-400 mb-2">
+        Robot Subsystems
+      </h2>
+      <div id="part-list" class="space-y-1.5 text-xs">
+        <button type="button" data-part="all" class="part-btn w-full text-left px-2.5 py-2 rounded-lg bg-sky-500/20 border border-sky-400/40 text-sky-200 font-medium transition">
+          Full Assembly Overview
+        </button>
+        <button type="button" data-part="tracks" class="part-btn w-full text-left px-2.5 py-2 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-slate-200 transition">
+          1. Anti-Slip Chevron Tracks
+        </button>
+        <button type="button" data-part="clamps" class="part-btn w-full text-left px-2.5 py-2 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-slate-200 transition">
+          2. Fixed Frame C-Clamps
+        </button>
+        <button type="button" data-part="scrub" class="part-btn w-full text-left px-2.5 py-2 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-slate-200 transition">
+          3. Scratch-Free Circular Mops
+        </button>
+        <button type="button" data-part="squeegee" class="part-btn w-full text-left px-2.5 py-2 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-slate-200 transition">
+          4. Soft Silicone Squeegee &amp; Mist
+        </button>
+        <button type="button" data-part="chassis" class="part-btn w-full text-left px-2.5 py-2 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 text-slate-200 transition">
+          5. Drive Motors &amp; LiFePO4 Pod
+        </button>
+      </div>
+
+      <div id="part-detail" class="mt-3 p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 text-[11px] leading-relaxed text-slate-300">
+        <strong class="text-white block mb-1">Full Assembly Overview</strong>
+        Drag to orbit, scroll to zoom, right-drag to pan. The robot locks onto the solar array frame with fixed non-marring clamps and cleans Panel 1, Panel 2, and Panel 3 sequentially.
+      </div>
+    </section>
+  </aside>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 panel-glass px-4 py-2 rounded-full text-xs font-medium text-emerald-300 border border-emerald-400/40 shadow-xl opacity-0 pointer-events-none transition-opacity duration-200">
+    Exported 3D model!
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('viewport');
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.outputEncoding = THREE.sRGBEncoding;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0b1120);
+      scene.fog = new THREE.FogExp2(0x0b1120, 0.032);
+
+      const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 150);
+
+      // Lighting
+      const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 0.75);
+      scene.add(hemiLight);
+
+      const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.35);
+      sunLight.position.set(8, 14, 10);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.width = 2048;
+      sunLight.shadow.mapSize.height = 2048;
+      sunLight.shadow.camera.near = 1;
+      sunLight.shadow.camera.far = 40;
+      const d = 10;
+      sunLight.shadow.camera.left = -d;
+      sunLight.shadow.camera.right = d;
+      sunLight.shadow.camera.top = d;
+      sunLight.shadow.camera.bottom = -d;
+      sunLight.shadow.bias = -0.0005;
+      scene.add(sunLight);
+
+      const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.45);
+      fillLight.position.set(-8, 6, -6);
+      scene.add(fillLight);
+
+      // Ground Grid & Base Plane
+      const groundGeo = new THREE.PlaneGeometry(60, 60);
+      const groundMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.92, metalness: 0.05 });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -1.6;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      const grid = new THREE.GridHelper(36, 36, 0x1e293b, 0x172033);
+      grid.position.y = -1.59;
+      scene.add(grid);
+
+      // Procedural Textures
+      function createSolarCellTexture() {
+        const c = document.createElement('canvas');
+        c.width = 512;
+        c.height = 512;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#0c1f44';
+        ctx.fillRect(0, 0, 512, 512);
+
+        const cols = 6;
+        const rows = 10;
+        const cw = 512 / cols;
+        const ch = 512 / rows;
+
+        for (let r = 0; r < rows; r++) {
+          for (let col = 0; col < cols; col++) {
+            const x = col * cw;
+            const y = r * ch;
+            const grad = ctx.createLinearGradient(x, y, x + cw, y + ch);
+            grad.addColorStop(0, '#0f295c');
+            grad.addColorStop(0.5, '#133575');
+            grad.addColorStop(1, '#0b1e45');
+            ctx.fillStyle = grad;
+            ctx.fillRect(x + 2, y + 2, cw - 4, ch - 4);
+
+            // Silver busbars
+            ctx.fillStyle = 'rgba(203, 213, 225, 0.45)';
+            ctx.fillRect(x + cw * 0.25, y + 2, 1.5, ch - 4);
+            ctx.fillRect(x + cw * 0.5, y + 2, 1.5, ch - 4);
+            ctx.fillRect(x + cw * 0.75, y + 2, 1.5, ch - 4);
+
+            // Fine fingers
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.16)';
+            for (let f = 1; f < 6; f++) {
+              ctx.fillRect(x + 2, y + (ch / 6) * f, cw - 4, 0.7);
+            }
+          }
+        }
+        const tex = new THREE.CanvasTexture(c);
+        tex.encoding = THREE.sRGBEncoding;
+        tex.anisotropy = 4;
+        return tex;
+      }
+
+      function createChevronTrackTexture() {
+        const c = document.createElement('canvas');
+        c.width = 256;
+        c.height = 256;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#18181b';
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.strokeStyle = '#3f3f46';
+        ctx.lineWidth = 10;
+        for (let y = -32; y < 288; y += 32) {
+          ctx.beginPath();
+          ctx.moveTo(0, y + 20);
+          ctx.lineTo(128, y);
+          ctx.lineTo(256, y + 20);
+          ctx.stroke();
+        }
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(1, 6);
+        return tex;
+      }
+
+      function createMicrofiberTexture() {
+        const c = document.createElement('canvas');
+        c.width = 256;
+        c.height = 256;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#e0f2fe';
+        ctx.fillRect(0, 0, 256, 256);
+        for (let i = 0; i < 4000; i++) {
+          const x = Math.random() * 256;
+          const y = Math.random() * 256;
+          ctx.fillStyle = i % 2 === 0 ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.6)';
+          ctx.fillRect(x, y, 3, 2);
+        }
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(2, 6);
+        return tex;
+      }
+
+      // Materials
+      const matAluminum = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.82, roughness: 0.28 });
+      const matDarkMetal = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.78, roughness: 0.35 });
+      const matBodyYellow = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.25, roughness: 0.38 });
+      const matBodySlate = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.35, roughness: 0.45 });
+      const matRubber = new THREE.MeshStandardMaterial({
+        color: 0x18181b,
+        map: createChevronTrackTexture(),
+        roughness: 0.92,
+        metalness: 0.05
+      });
+      const matPTFE = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.35, metalness: 0.1 });
+      const matMicrofiber = new THREE.MeshStandardMaterial({
+        color: 0xf0f9ff,
+        map: createMicrofiberTexture(),
+        roughness: 0.95,
+        metalness: 0.0
+      });
+      const matSilicone = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.45, metalness: 0.05 });
+      const matSolarCell = new THREE.MeshStandardMaterial({
+        map: createSolarCellTexture(),
+        roughness: 0.16,
+        metalness: 0.35
+      });
+      const matSteel = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.88, roughness: 0.22 });
+      const matLedGreen = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x10b981, emissiveIntensity: 1.2 });
+
+      // Root Assembly for Tilt
+      const arrayPivot = new THREE.Group();
+      scene.add(arrayPivot);
+
+      // Ground Support Struts (stay vertical below pivot)
+      const supportGroup = new THREE.Group();
+      scene.add(supportGroup);
+      [-4.2, 0, 4.2].forEach((sx) => {
+        const postFront = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.4, 0.14), matDarkMetal);
+        postFront.position.set(sx, -0.9, 1.15);
+        postFront.castShadow = true;
+        supportGroup.add(postFront);
+
+        const postRear = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.3, 0.14), matDarkMetal);
+        postRear.position.set(sx, -0.45, -1.15);
+        postRear.castShadow = true;
+        supportGroup.add(postRear);
+
+        const foot = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 2.8), matDarkMetal);
+        foot.position.set(sx, -1.57, 0);
+        foot.receiveShadow = true;
+        supportGroup.add(foot);
+      });
+
+      // 3 Solar Panels (cleaned one by one)
+      const PANEL_W = 3.2;
+      const PANEL_D = 3.4;
+      const PANEL_GAP = 0.16;
+      const PANEL_CENTERS = [-(PANEL_W + PANEL_GAP), 0, PANEL_W + PANEL_GAP];
+      const panelsGroup = new THREE.Group();
+      arrayPivot.add(panelsGroup);
+
+      const dustLayers = []; // { canvas, ctx, tex, cleanMask, pct }
+
+      function createDustLayer() {
+        const c = document.createElement('canvas');
+        c.width = 256;
+        c.height = 256;
+        const ctx = c.getContext('2d');
+        const tex = new THREE.CanvasTexture(c);
+        const layer = { canvas: c, ctx, tex, cleanMask: new Uint8Array(256), pct: 0 };
+        resetSingleDust(layer);
+        return layer;
+      }
+
+      function resetSingleDust(layer) {
+        const { ctx, tex, cleanMask } = layer;
+        cleanMask.fill(0);
+        layer.pct = 0;
+        ctx.clearRect(0, 0, 256, 256);
+        // Translucent sandy dust coat
+        ctx.fillStyle = 'rgba(194, 168, 128, 0.42)';
+        ctx.fillRect(0, 0, 256, 256);
+        for (let i = 0; i < 1600; i++) {
+          const x = Math.random() * 256;
+          const y = Math.random() * 256;
+          const r = 0.8 + Math.random() * 2.2;
+          ctx.fillStyle = `rgba(214, 190, 152, ${0.18 + Math.random() * 0.25})`;
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        tex.needsUpdate = true;
+      }
+
+      PANEL_CENTERS.forEach((cx) => {
+        const pGroup = new THREE.Group();
+        pGroup.position.set(cx, 0, 0);
+
+        // Glass & cells
+        const cellMesh = new THREE.Mesh(new THREE.BoxGeometry(PANEL_W - 0.12, 0.04, PANEL_D - 0.12), matSolarCell);
+        cellMesh.receiveShadow = true;
+        pGroup.add(cellMesh);
+
+        // Dust overlay plane just above glass
+        const dust = createDustLayer();
+        dustLayers.push(dust);
+        const dustMat = new THREE.MeshBasicMaterial({
+          map: dust.tex,
+          transparent: true,
+          depthWrite: false
+        });
+        const dustPlane = new THREE.Mesh(new THREE.PlaneGeometry(PANEL_W - 0.14, PANEL_D - 0.14), dustMat);
+        dustPlane.rotation.x = -Math.PI / 2;
+        dustPlane.position.y = 0.023;
+        pGroup.add(dustPlane);
+
+        // Aluminum Frame Rails (Top, Bottom, Left, Right)
+        const frameH = 0.09;
+        const frameT = 0.06;
+        const topRail = new THREE.Mesh(new THREE.BoxGeometry(PANEL_W, frameH, frameT), matAluminum);
+        topRail.position.set(0, 0, -PANEL_D / 2 + frameT / 2);
+        topRail.castShadow = true;
+        topRail.receiveShadow = true;
+        pGroup.add(topRail);
+
+        const botRail = new THREE.Mesh(new THREE.BoxGeometry(PANEL_W, frameH, frameT), matAluminum);
+        botRail.position.set(0, 0, PANEL_D / 2 - frameT / 2);
+        botRail.castShadow = true;
+        botRail.receiveShadow = true;
+        pGroup.add(botRail);
+
+        const leftRail = new THREE.Mesh(new THREE.BoxGeometry(frameT, frameH, PANEL_D - frameT * 2), matAluminum);
+        leftRail.position.set(-PANEL_W / 2 + frameT / 2, 0, 0);
+        pGroup.add(leftRail);
+
+        const rightRail = new THREE.Mesh(new THREE.BoxGeometry(frameT, frameH, PANEL_D - frameT * 2), matAluminum);
+        rightRail.position.set(PANEL_W / 2 - frameT / 2, 0, 0);
+        pGroup.add(rightRail);
+
+        panelsGroup.add(pGroup);
+      });
+
+      // Inter-panel continuous guide bridge rails (extended at ends for full-panel mop travel)
+      [-PANEL_D / 2 + 0.03, PANEL_D / 2 - 0.03].forEach((rz) => {
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(PANEL_W * 3 + PANEL_GAP * 2 + 1.1, 0.035, 0.055), matSteel);
+        bridge.position.set(0.18, -0.03, rz);
+        panelsGroup.add(bridge);
+      });
+
+      // =========================================================
+      // SOLAR CLEANER ROBOT ASSEMBLY
+      // =========================================================
+      const robotRoot = new THREE.Group();
+      robotRoot.position.set(PANEL_CENTERS[0] - PANEL_W / 2 + 0.45, 0.045, 0);
+      arrayPivot.add(robotRoot);
+
+      // Subassembly Groups (for Exploded View & Highlighting)
+      const subChassis = new THREE.Group();
+      const subTracks = new THREE.Group();
+      const subClamps = new THREE.Group();
+      const subScrub = new THREE.Group();
+      const subSqueegee = new THREE.Group();
+
+      robotRoot.add(subChassis, subTracks, subClamps, subScrub, subSqueegee);
+
+      // Store base positions for exploded view
+      const explodeTargets = [
+        { obj: subChassis, offset: new THREE.Vector3(0, 0.55, 0) },
+        { obj: subTracks, offset: new THREE.Vector3(0, 0.15, 0) },
+        { obj: subClamps, offset: new THREE.Vector3(0, -0.25, 0) },
+        { obj: subScrub, offset: new THREE.Vector3(-0.35, 0.15, 0) },
+        { obj: subSqueegee, offset: new THREE.Vector3(0.35, 0.15, 0) }
+      ];
+
+      // 1. CHASSIS & DRIVE POD
+      const bridgeBeam = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.12, PANEL_D + 0.22), matBodySlate);
+      bridgeBeam.position.set(0, 0.22, 0);
+      bridgeBeam.castShadow = true;
+      subChassis.add(bridgeBeam);
+
+      const topCover = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.09, 1.3), matBodyYellow);
+      topCover.position.set(0, 0.32, 0);
+      topCover.castShadow = true;
+      subChassis.add(topCover);
+
+      // Mini onboard solar trickle panel on robot roof
+      const miniSolar = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.02, 0.95), matSolarCell);
+      miniSolar.position.set(0, 0.37, 0);
+      subChassis.add(miniSolar);
+
+      // LiFePO4 Battery & Controller Pod
+      const batteryPod = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.11, 0.72), matDarkMetal);
+      batteryPod.position.set(0, 0.28, -1.05);
+      batteryPod.castShadow = true;
+      subChassis.add(batteryPod);
+
+      // Status LED Strip
+      const ledBar = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.03, 0.35), matLedGreen);
+      ledBar.position.set(0.25, 0.31, 0);
+      subChassis.add(ledBar);
+
+      // Dual Brushless Drive Motor Housings
+      [-1.38, 1.38].forEach((mz) => {
+        const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.28, 20), matAluminum);
+        motor.rotation.z = Math.PI / 2;
+        motor.position.set(0, 0.22, mz);
+        motor.castShadow = true;
+        subChassis.add(motor);
+      });
+
+      // 2. ANTI-SLIP CHEVRON TRACKS & STABILIZER ROLLERS
+      const trackWheels = [];
+      [-PANEL_D / 2 + 0.04, PANEL_D / 2 - 0.04].forEach((tz) => {
+        const trackUnit = new THREE.Group();
+        trackUnit.position.set(0, 0.09, tz);
+
+        // Rubber track belt (pill shape approximated with box + 2 end cylinders)
+        const beltCore = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.14, 0.14), matRubber);
+        beltCore.castShadow = true;
+        trackUnit.add(beltCore);
+
+        [-0.28, 0.28].forEach((wx) => {
+          const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.072, 0.145, 20), matRubber);
+          wheel.rotation.x = Math.PI / 2;
+          wheel.position.set(wx, 0, 0);
+          wheel.castShadow = true;
+          trackUnit.add(wheel);
+
+          const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.16, 12), matAluminum);
+          hub.rotation.x = Math.PI / 2;
+          hub.position.set(wx, 0, 0);
+          trackUnit.add(hub);
+          trackWheels.push(hub);
+        });
+
+        // Raised Anti-Slip Chevron Lugs along top & bottom of track
+        for (let lx = -0.22; lx <= 0.22; lx += 0.09) {
+          const lugTop = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.02, 0.15), matBodyYellow);
+          lugTop.position.set(lx, 0.075, 0);
+          trackUnit.add(lugTop);
+
+          const lugBot = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.02, 0.15), matBodyYellow);
+          lugBot.position.set(lx, -0.075, 0);
+          trackUnit.add(lugBot);
+        }
+
+        subTracks.add(trackUnit);
+      });
+
+      // 3. FIXED MECHANICAL FRAME CLAMPS (Non-Marring PTFE-Lined C-Clamps)
+      const clampPositions = [
+        { x: -0.26, z: -PANEL_D / 2 - 0.02, dir: -1 },
+        { x:  0.26, z: -PANEL_D / 2 - 0.02, dir: -1 },
+        { x: -0.26, z:  PANEL_D / 2 + 0.02, dir:  1 },
+        { x:  0.26, z:  PANEL_D / 2 + 0.02, dir:  1 }
+      ];
+
+      clampPositions.forEach((cp) => {
+        const clamp = new THREE.Group();
+        clamp.position.set(cp.x, 0.04, cp.z);
+
+        // Vertical outer spine
+        const spine = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.24, 0.05), matDarkMetal);
+        spine.position.set(0, -0.01, cp.dir * 0.055);
+        spine.castShadow = true;
+        clamp.add(spine);
+
+        // Top arm connecting to chassis
+        const topArm = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.04, 0.14), matDarkMetal);
+        topArm.position.set(0, 0.11, -cp.dir * 0.01);
+        clamp.add(topArm);
+
+        // Bottom hook jaw locking under the solar panel frame lip
+        const botJaw = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.035, 0.13), matDarkMetal);
+        botJaw.position.set(0, -0.115, -cp.dir * 0.005);
+        clamp.add(botJaw);
+
+        // Soft PTFE / Silicone non-marring liner pad inside jaw
+        const ptfePad = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.02, 0.09), matPTFE);
+        ptfePad.position.set(0, -0.092, -cp.dir * 0.015);
+        clamp.add(ptfePad);
+
+        // Locking thumb-bolt
+        const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.07, 12), matSteel);
+        bolt.rotation.x = Math.PI / 2;
+        bolt.position.set(0, -0.04, cp.dir * 0.09);
+        clamp.add(bolt);
+
+        subClamps.add(clamp);
+      });
+
+      // 4. SMOOTH SCRATCH-FREE CIRCULAR MICROFIBER MOPS (Fixed Compliant Mount)
+      const scrubMopGroup = new THREE.Group();
+      scrubMopGroup.position.set(-0.26, 0.02, 0);
+      subScrub.add(scrubMopGroup);
+
+      // Fixed horizontal mounting crossbar
+      const mopCrossbar = new THREE.Mesh(
+        new THREE.BoxGeometry(0.11, 0.05, PANEL_D - 0.22),
+        matAluminum
+      );
+      mopCrossbar.position.set(0, 0.14, 0);
+      mopCrossbar.castShadow = true;
+      scrubMopGroup.add(mopCrossbar);
+
+      // End support arms connecting crossbar to chassis
+      [-PANEL_D / 2 + 0.12, PANEL_D / 2 - 0.12].forEach((bz) => {
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 0.04), matAluminum);
+        arm.position.set(0, 0.16, bz);
+        scrubMopGroup.add(arm);
+      });
+
+      // Six contra-rotating circular microfiber mop discs
+      const circularMops = [];
+      const mopZPositions = [-1.25, -0.75, -0.25, 0.25, 0.75, 1.25];
+      mopZPositions.forEach((mz) => {
+        const mopUnit = new THREE.Group();
+        mopUnit.position.set(0, 0, mz);
+
+        // Soft circular microfiber pad
+        const pad = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.24, 0.26, 0.04, 28),
+          matMicrofiber
+        );
+        pad.position.y = 0.01;
+        pad.castShadow = true;
+        mopUnit.add(pad);
+
+        // Soft PTFE/EVA backing plate
+        const backing = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.20, 0.22, 0.022, 24),
+          matPTFE
+        );
+        backing.position.y = 0.042;
+        mopUnit.add(backing);
+
+        // Radial stitching/pleat detail so rotation is clearly visible
+        const pleat = new THREE.Mesh(
+          new THREE.BoxGeometry(0.42, 0.008, 0.025),
+          matPTFE
+        );
+        pleat.position.y = 0.032;
+        mopUnit.add(pleat);
+
+        // Compliant spring-damped vertical spindle
+        const spindle = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.032, 0.032, 0.11, 14),
+          matAluminum
+        );
+        spindle.position.y = 0.095;
+        mopUnit.add(spindle);
+
+        scrubMopGroup.add(mopUnit);
+        circularMops.push(mopUnit);
+      });
+
+      // 5. TRAILING SOFT SILICONE SQUEEGEE & MICRO-MIST BAR
+      const squeegeeBar = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.07, PANEL_D - 0.24), matSilicone);
+      squeegeeBar.position.set(0.24, 0.015, 0);
+      subSqueegee.add(squeegeeBar);
+
+      const squeegeeHolder = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.12, PANEL_D - 0.22), matAluminum);
+      squeegeeHolder.position.set(0.24, 0.10, 0);
+      subSqueegee.add(squeegeeHolder);
+
+      // Micro-mist nozzles
+      for (let nz = -1.2; nz <= 1.2; nz += 0.6) {
+        const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.018, 0.04, 10), matPTFE);
+        nozzle.position.set(-0.34, 0.12, nz);
+        nozzle.rotation.z = 0.4;
+        subSqueegee.add(nozzle);
+      }
+
+      // =========================================================
+      // ONE-BY-ONE CLEANING SIMULATION STATE
+      // =========================================================
+      const MIN_X = PANEL_CENTERS[0] - PANEL_W / 2 + 0.35;
+      const MAX_X = PANEL_CENTERS[2] + PANEL_W / 2 + 0.15;
+
+      const sim = {
+        running: false,
+        direction: 1,
+        speed: 1.55,
+        targetPanel: null, // null = full 1->2->3 sequence, or 0/1/2
+        explode: 0
+      };
+
+      function updateDustAtRobotX(rx) {
+        const brushX = rx - 0.26;
+        const mopRadius = 0.24;
+        PANEL_CENTERS.forEach((cx, pIdx) => {
+          const activeW = PANEL_W - 0.14;
+          const panelLeft = cx - activeW / 2;
+          const uStart = (brushX - mopRadius - panelLeft) / activeW;
+          const uEnd = (brushX + mopRadius - panelLeft) / activeW;
+          if (uEnd >= 0 && uStart <= 1) {
+            const colStart = Math.max(0, Math.floor(uStart * 256));
+            const colEnd = Math.min(255, Math.ceil(uEnd * 256));
+            const layer = dustLayers[pIdx];
+            let changed = false;
+            for (let c = colStart; c <= colEnd; c++) {
+              if (layer.cleanMask[c] === 0) {
+                layer.cleanMask[c] = 1;
+                layer.ctx.clearRect(c, 0, 1, 256);
+                changed = true;
+              }
+            }
+            if (changed) {
+              layer.tex.needsUpdate = true;
+              let sum = 0;
+              for (let i = 0; i < 256; i++) sum += layer.cleanMask[i];
+              layer.pct = Math.round((sum / 256) * 100);
+              document.getElementById(`clean-pct-${pIdx}`).textContent = `${layer.pct}%`;
+              document.getElementById(`clean-bar-${pIdx}`).style.width = `${layer.pct}%`;
+            }
+          }
+        });
+      }
+
+      function setSimStatus(text, isActive) {
+        const badge = document.getElementById('sim-status-badge');
+        badge.textContent = text;
+        badge.className = isActive
+          ? 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/40'
+          : 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+      }
+
+      // =========================================================
+      // CUSTOM ORBIT / PAN / ZOOM CAMERA CONTROLLER
+      // =========================================================
+      const camState = {
+        target: new THREE.Vector3(0, 0.1, 0),
+        theta: 0.72,
+        phi: 1.02,
+        radius: 10.5,
+        desiredTarget: new THREE.Vector3(0, 0.1, 0),
+        desiredTheta: 0.72,
+        desiredPhi: 1.02,
+        desiredRadius: 10.5
+      };
+
+      let isDragging = false;
+      let isPanning = false;
+      let prevPointer = { x: 0, y: 0 };
+
+      canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      canvas.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        isPanning = e.button === 2 || e.shiftKey;
+        prevPointer = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        prevPointer = { x: e.clientX, y: e.clientY };
+
+        if (isPanning) {
+          const panSpeed = camState.desiredRadius * 0.0014;
+          const forward = new THREE.Vector3();
+          camera.getWorldDirection(forward);
+          const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+          const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+          camState.desiredTarget.addScaledVector(right, -dx * panSpeed);
+          camState.desiredTarget.addScaledVector(up, dy * panSpeed);
+        } else {
+          camState.desiredTheta -= dx * 0.0065;
+          camState.desiredPhi = Math.max(0.18, Math.min(Math.PI / 2 - 0.04, camState.desiredPhi - dy * 0.0065));
+        }
+      });
+
+      window.addEventListener('pointerup', () => {
+        isDragging = false;
+      });
+
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.desiredRadius = Math.max(2.0, Math.min(24.0, camState.desiredRadius + e.deltaY * 0.008));
+      }, { passive: false });
+
+      function setCameraPreset(preset) {
+        const rx = robotRoot.position.x;
+        const ry = robotRoot.position.y;
+        if (preset === 'iso') {
+          camState.desiredTarget.set(0, 0.1, 0);
+          camState.desiredTheta = 0.72;
+          camState.desiredPhi = 1.02;
+          camState.desiredRadius = 10.5;
+        } else if (preset === 'top') {
+          camState.desiredTarget.set(0, 0, 0);
+          camState.desiredTheta = 0.01;
+          camState.desiredPhi = 0.22;
+          camState.desiredRadius = 11.5;
+        } else if (preset === 'clamp') {
+          camState.desiredTarget.set(rx, ry, PANEL_D / 2);
+          camState.desiredTheta = 0.55;
+          camState.desiredPhi = 1.18;
+          camState.desiredRadius = 2.4;
+        } else if (preset === 'scrub') {
+          camState.desiredTarget.set(rx - 0.2, ry + 0.05, 0);
+          camState.desiredTheta = -0.75;
+          camState.desiredPhi = 1.12;
+          camState.desiredRadius = 3.2;
+        } else if (preset === 'track') {
+          camState.desiredTarget.set(rx, ry + 0.1, PANEL_D / 2 - 0.05);
+          camState.desiredTheta = 0.95;
+          camState.desiredPhi = 1.15;
+          camState.desiredRadius = 2.6;
+        }
+      }
+
+      // =========================================================
+      // UI EVENT WIRING
+      // =========================================================
+      document.querySelectorAll('.cam-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.cam-btn').forEach((b) => {
+            b.classList.remove('bg-sky-500/20', 'text-sky-300', 'border-sky-400/40');
+            b.classList.add('bg-slate-800/80', 'text-slate-300', 'border-slate-700');
+          });
+          btn.classList.add('bg-sky-500/20', 'text-sky-300', 'border-sky-400/40');
+          btn.classList.remove('bg-slate-800/80', 'text-slate-300', 'border-slate-700');
+          setCameraPreset(btn.dataset.cam);
+        });
+      });
+
+      const btnPlayPause = document.getElementById('btn-play-pause');
+      btnPlayPause.addEventListener('click', () => {
+        sim.running = !sim.running;
+        sim.targetPanel = null;
+        btnPlayPause.textContent = sim.running ? 'Pause Cleaning' : 'Resume Cleaning';
+        setSimStatus(sim.running ? 'Cleaning Array...' : 'Paused', sim.running);
+      });
+
+      document.getElementById('btn-reset-dust').addEventListener('click', () => {
+        sim.running = false;
+        sim.targetPanel = null;
+        sim.direction = 1;
+        robotRoot.position.x = MIN_X;
+        dustLayers.forEach((layer, i) => {
+          resetSingleDust(layer);
+          document.getElementById(`clean-pct-${i}`).textContent = '0%';
+          document.getElementById(`clean-bar-${i}`).style.width = '0%';
+        });
+        btnPlayPause.textContent = 'Start Auto Clean';
+        setSimStatus('Ready', false);
+      });
+
+      document.querySelectorAll('.panel-target-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const pIdx = parseInt(btn.dataset.panel, 10);
+          sim.targetPanel = pIdx;
+          sim.running = true;
+          const startX = PANEL_CENTERS[pIdx] - PANEL_W / 2 + 0.35;
+          sim.direction = robotRoot.position.x <= startX ? 1 : -1;
+          btnPlayPause.textContent = 'Pause Cleaning';
+          setSimStatus(`Cleaning Panel ${pIdx + 1}`, true);
+        });
+      });
+
+      document.getElementById('slider-explode').addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        sim.explode = val / 100;
+        document.getElementById('explode-val').textContent = `${val}%`;
+        explodeTargets.forEach((item) => {
+          item.obj.position.copy(item.offset).multiplyScalar(sim.explode);
+        });
+      });
+
+      const tiltSlider = document.getElementById('slider-tilt');
+      function applyTilt(deg) {
+        arrayPivot.rotation.x = THREE.MathUtils.degToRad(deg);
+        document.getElementById('tilt-val').innerHTML = `${deg}&deg;`;
+      }
+      applyTilt(22);
+      tiltSlider.addEventListener('input', (e) => {
+        applyTilt(parseInt(e.target.value, 10));
+      });
+
+      const btnTogglePanels = document.getElementById('btn-toggle-panels');
+      let panelsVisible = true;
+      btnTogglePanels.addEventListener('click', () => {
+        panelsVisible = !panelsVisible;
+        panelsGroup.visible = panelsVisible;
+        supportGroup.visible = panelsVisible;
+        btnTogglePanels.textContent = panelsVisible ? 'Visible' : 'Hidden';
+      });
+
+      // Part Inspector Descriptions
+      const PART_INFO = {
+        all: {
+          title: 'Full Assembly Overview',
+          desc: 'Drag to orbit, scroll to zoom, right-drag to pan. The robot locks onto the solar array frame with fixed non-marring clamps and cleans Panel 1, Panel 2, and Panel 3 sequentially.'
+        },
+        tracks: {
+          title: '1. Anti-Slip Chevron Tracks',
+          desc: 'Dual high-friction rubberized chevron-tread belts with raised yellow traction lugs grip the aluminum frame rails, preventing downward slippage even at steep 40° panel tilts.'
+        },
+        clamps: {
+          title: '2. Fixed Frame C-Clamps',
+          desc: 'Four rigid C-channel clamps bolt to the chassis outriggers and wrap beneath the panel frame lip. Blue PTFE/silicone jaw liners prevent metal-on-metal wear and keep the robot locked in place.'
+        },
+        scrub: {
+          title: '3. Scratch-Free Circular Mops',
+          desc: 'Six fixed-mount contra-rotating circular microfiber mop discs on compliant spring-damped spindles. Gently buff away dust across the full panel width without scratching anti-reflective solar glass.'
+        },
+        squeegee: {
+          title: '4. Soft Silicone Squeegee & Mist',
+          desc: 'A trailing medical-grade silicone blade and low-pressure micro-mist nozzles sweep away residual moisture and fine particles in a single pass.'
+        },
+        chassis: {
+          title: '5. Drive Motors & LiFePO4 Pod',
+          desc: 'Sealed brushless DC drive motors, weatherproof IP65 chassis, onboard trickle-charge solar roof, and a 24V LiFePO4 battery pod for autonomous panel-by-panel operation.'
+        }
+      };
+
+      const subMap = {
+        tracks: subTracks,
+        clamps: subClamps,
+        scrub: subScrub,
+        squeegee: subSqueegee,
+        chassis: subChassis
+      };
+
+      document.querySelectorAll('.part-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.part;
+          document.querySelectorAll('.part-btn').forEach((b) => {
+            b.classList.remove('bg-sky-500/20', 'border-sky-400/40', 'text-sky-200', 'font-medium');
+            b.classList.add('bg-slate-800/70', 'border-slate-700/70', 'text-slate-200');
+          });
+          btn.classList.add('bg-sky-500/20', 'border-sky-400/40', 'text-sky-200', 'font-medium');
+          btn.classList.remove('bg-slate-800/70', 'border-slate-700/70', 'text-slate-200');
+
+          const info = PART_INFO[key];
+          document.getElementById('part-detail').innerHTML =
+            `<strong class="text-white block mb-1">${info.title}</strong>${info.desc}`;
+
+          Object.keys(subMap).forEach((k) => {
+            subMap[k].visible = key === 'all' || key === k;
+          });
+
+          if (key === 'clamps') setCameraPreset('clamp');
+          else if (key === 'scrub' || key === 'squeegee') setCameraPreset('scrub');
+          else if (key === 'tracks') setCameraPreset('track');
+          else if (key === 'all') setCameraPreset('iso');
+        });
+      });
+
+      // Mobile sidebar toggle
+      const sidebar = document.getElementById('sidebar');
+      document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-[110%]');
+      });
+
+      // =========================================================
+      // CLIENT-SIDE 3D EXPORT (.STL & .OBJ)
+      // =========================================================
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.remove('opacity-0');
+        setTimeout(() => t.classList.add('opacity-0'), 2500);
+      }
+
+      function downloadBlob(content, filename, mime) {
+        const blob = new Blob([content], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function exportRobotSTL() {
+        robotRoot.updateMatrixWorld(true);
+        const lines = ['solid SolarClean_X1_Robot'];
+        const vA = new THREE.Vector3();
+        const vB = new THREE.Vector3();
+        const vC = new THREE.Vector3();
+        const cb = new THREE.Vector3();
+        const ab = new THREE.Vector3();
+
+        robotRoot.traverse((child) => {
+          if (!child.isMesh || !child.visible) return;
+          const geom = child.geometry;
+          const pos = geom.attributes.position;
+          if (!pos) return;
+          const idx = geom.index;
+          const count = idx ? idx.count : pos.count;
+
+          for (let i = 0; i < count; i += 3) {
+            const i0 = idx ? idx.getX(i) : i;
+            const i1 = idx ? idx.getX(i + 1) : i + 1;
+            const i2 = idx ? idx.getX(i + 2) : i + 2;
+
+            vA.fromBufferAttribute(pos, i0).applyMatrix4(child.matrixWorld);
+            vB.fromBufferAttribute(pos, i1).applyMatrix4(child.matrixWorld);
+            vC.fromBufferAttribute(pos, i2).applyMatrix4(child.matrixWorld);
+
+            cb.subVectors(vC, vB);
+            ab.subVectors(vA, vB);
+            cb.cross(ab).normalize();
+
+            lines.push(`  facet normal ${cb.x.toFixed(5)} ${cb.y.toFixed(5)} ${cb.z.toFixed(5)}`);
+            lines.push('    outer loop');
+            lines.push(`      vertex ${vA.x.toFixed(5)} ${vA.y.toFixed(5)} ${vA.z.toFixed(5)}`);
+            lines.push(`      vertex ${vB.x.toFixed(5)} ${vB.y.toFixed(5)} ${vB.z.toFixed(5)}`);
+            lines.push(`      vertex ${vC.x.toFixed(5)} ${vC.y.toFixed(5)} ${vC.z.toFixed(5)}`);
+            lines.push('    endloop');
+            lines.push('  endfacet');
+          }
+        });
+        lines.push('endsolid SolarClean_X1_Robot');
+        downloadBlob(lines.join('\n'), 'solar_panel_cleaner_robot.stl', 'model/stl');
+        showToast('Exported solar_panel_cleaner_robot.stl');
+      }
+
+      function exportRobotOBJ() {
+        robotRoot.updateMatrixWorld(true);
+        const lines = ['# SolarClean-X1 Automatic Solar Panel Cleaner Robot'];
+        let vOffset = 1;
+        const v = new THREE.Vector3();
+
+        robotRoot.traverse((child) => {
+          if (!child.isMesh || !child.visible) return;
+          const geom = child.geometry;
+          const pos = geom.attributes.position;
+          if (!pos) return;
+          const idx = geom.index;
+
+          for (let i = 0; i < pos.count; i++) {
+            v.fromBufferAttribute(pos, i).applyMatrix4(child.matrixWorld);
+            lines.push(`v ${v.x.toFixed(5)} ${v.y.toFixed(5)} ${v.z.toFixed(5)}`);
+          }
+          if (idx) {
+            for (let i = 0; i < idx.count; i += 3) {
+              lines.push(`f ${idx.getX(i) + vOffset} ${idx.getX(i + 1) + vOffset} ${idx.getX(i + 2) + vOffset}`);
+            }
+          } else {
+            for (let i = 0; i < pos.count; i += 3) {
+              lines.push(`f ${i + vOffset} ${i + 1 + vOffset} ${i + 2 + vOffset}`);
+            }
+          }
+          vOffset += pos.count;
+        });
+        downloadBlob(lines.join('\n'), 'solar_panel_cleaner_robot.obj', 'text/plain');
+        showToast('Exported solar_panel_cleaner_robot.obj');
+      }
+
+      document.getElementById('btn-export-stl').addEventListener('click', exportRobotSTL);
+      document.getElementById('btn-export-obj').addEventListener('click', exportRobotOBJ);
+
+      // =========================================================
+      // ANIMATION LOOP
+      // =========================================================
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const dt = Math.min(clock.getDelta(), 0.05);
+
+        // Smooth camera damping
+        camState.theta += (camState.desiredTheta - camState.theta) * 0.12;
+        camState.phi += (camState.desiredPhi - camState.phi) * 0.12;
+        camState.radius += (camState.desiredRadius - camState.radius) * 0.12;
+        camState.target.lerp(camState.desiredTarget, 0.12);
+
+        camera.position.set(
+          camState.target.x + camState.radius * Math.sin(camState.phi) * Math.sin(camState.theta),
+          camState.target.y + camState.radius * Math.cos(camState.phi),
+          camState.target.z + camState.radius * Math.sin(camState.phi) * Math.cos(camState.theta)
+        );
+        camera.lookAt(camState.target);
+
+        // Cleaning Motion
+        if (sim.running) {
+          robotRoot.position.x += sim.direction * sim.speed * dt;
+          circularMops.forEach((mop, idx) => {
+            mop.rotation.y += (idx % 2 === 0 ? 1 : -1) * 10.0 * dt;
+          });
+          trackWheels.forEach((w) => {
+            w.rotation.y -= sim.direction * 6.0 * dt;
+          });
+
+          updateDustAtRobotX(robotRoot.position.x);
+
+          if (sim.targetPanel !== null) {
+            const pStart = PANEL_CENTERS[sim.targetPanel] - PANEL_W / 2 + 0.35;
+            const pEnd = PANEL_CENTERS[sim.targetPanel] + PANEL_W / 2 + 0.15;
+            if (sim.direction === 1 && robotRoot.position.x >= pEnd) {
+              robotRoot.position.x = pEnd;
+              sim.running = false;
+              btnPlayPause.textContent = 'Start Auto Clean';
+              setSimStatus(`Panel ${sim.targetPanel + 1} Clean`, false);
+            } else if (sim.direction === -1 && robotRoot.position.x <= pStart) {
+              sim.direction = 1;
+            }
+          } else {
+            // Sequential 1 -> 2 -> 3 cleaning
+            const x = robotRoot.position.x;
+            if (x < PANEL_CENTERS[0] + PANEL_W / 2) setSimStatus('Cleaning Panel 1', true);
+            else if (x < PANEL_CENTERS[1] + PANEL_W / 2) setSimStatus('Cleaning Panel 2', true);
+            else setSimStatus('Cleaning Panel 3', true);
+
+            if (sim.direction === 1 && robotRoot.position.x >= MAX_X) {
+              robotRoot.position.x = MAX_X;
+              sim.direction = -1;
+            } else if (sim.direction === -1 && robotRoot.position.x <= MIN_X) {
+              robotRoot.position.x = MIN_X;
+              sim.direction = 1;
+              sim.running = false;
+              btnPlayPause.textContent = 'Start Auto Clean';
+              setSimStatus('All Panels Clean', false);
+            }
+          }
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      animate();
+    })();
+  </script>
+</body>
+</html>
